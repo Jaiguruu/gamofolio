@@ -1,0 +1,125 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Developer Profile - The main character info
+model DeveloperProfile {
+  id          String   @id @default(cuid())
+  name        String
+  title       String   // e.g., "Full Stack Developer"
+  bio         String
+  email       String?
+  github      String?
+  linkedin    String?
+  website     String?
+  resumeUrl   String?
+  avatarUrl   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  projects    Project[]
+  skills      Skill[]
+  npcs        NPC[]
+}
+
+// Projects - Interactive buildings in the game world
+model Project {
+  id            String   @id @default(cuid())
+  title         String
+  description   String
+  techStack     String   // JSON stringified array
+  githubUrl     String?
+  liveUrl       String?
+  imageUrl      String?
+  featured      Boolean  @default(false)
+  order         Int      @default(0)
+  
+  // Position in game world (tile coordinates)
+  positionX     Int
+  positionY     Int
+  buildingType  String   @default("house") // house, tower, castle, workshop
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  developerId   String
+  developer     DeveloperProfile @relation(fields: [developerId], references: [id])
+}
+
+// Skills - Represented by NPCs or skill orbs
+model Skill {
+  id            String   @id @default(cuid())
+  name          String
+  category      String   // Frontend, Backend, Tools, etc.
+  level         Int      @default(1) // 1-5 skill level
+  description   String
+  iconUrl       String?
+  yearsOfExp    Int?
+  
+  // If skill is an NPC
+  isNpc         Boolean  @default(false)
+  npcDialogue   String?  // JSON stringified dialogue lines
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  developerId   String
+  developer     DeveloperProfile @relation(fields: [developerId], references: [id])
+}
+
+// NPCs - Characters that provide info, represent skills, or guide players
+model NPC {
+  id            String   @id @default(cuid())
+  name          String
+  type          String   // skill_mentor, guide, quest_giver, about_me
+  spriteKey     String   // Reference to sprite asset
+  
+  // Position in game world (tile coordinates)
+  positionX     Int
+  positionY     Int
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  developerId   String
+  developer     DeveloperProfile @relation(fields: [developerId], references: [id])
+  
+  dialogues     Dialogue[]
+}
+
+// Dialogue - NPC conversation lines
+model Dialogue {
+  id            String   @id @default(cuid())
+  npcId         String
+  npc           NPC      @relation(fields: [npcId], references: [id], onDelete: Cascade)
+  
+  triggerType   String   @default("interact") // interact, proximity, quest_complete
+  triggerValue  String?  // Additional trigger condition
+  
+  lines         String   // JSON stringified array of dialogue lines
+  order         Int      @default(0)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// Game Settings - Global game configuration
+model GameSetting {
+  id            String   @id @default(cuid())
+  key           String   @unique
+  value         String   // JSON stringified value
+  description   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
